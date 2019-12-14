@@ -5,7 +5,7 @@ pygame.init()
 window_size = window_width, window_height = 1280, 720
 screen = pygame.display.set_mode(window_size)
 clock = pygame.time.Clock()
-tmxdata = pytmx.TiledMap("maptest.tmx")
+tmxdata = pytmx.TiledMap("map.tmx")
 mapsize = tmxdata.width, tmxdata.height
 tilesize = 40
 blittablelist = []
