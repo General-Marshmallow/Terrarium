@@ -1,4 +1,4 @@
-import pytmx, pygame, sys
+import pytmx, pygame, sys, math
 
 pygame.init()
 window_size = window_width, window_height = 1280, 720
@@ -32,14 +32,11 @@ def create_lists():
                 if img is None:
                     pass
                 else:
-                    rect = (xx * tilesize - offset[0], yy * tilesize - offset[1], tilesize, tilesize)
+                    rect = (xx * tilesize - player.oofset[0], yy * tilesize + player.oofset[1], tilesize, tilesize)
                     blittablerect = get_texture(img[0]), rect
                     blittablelist.append(blittablerect)
-                    #print(layerlist)
-                    #print(layerlist[n])
                     if n == 2:
                         rectlist.append(rect)
-    print(rectlist)
 
 
 class Event:
@@ -93,7 +90,7 @@ class Player:
     walknames = ["textures/walk1.png", "textures/walk2.png", "textures/walk3.png", "textures/walk3.png", "textures/walk4.png", "textures/walk5.png", "textures/walk6.png"]
     stillname = "textures/still.png"
     jumpname = "textures/jump.png"
-    hitbox = (tilesize, tilesize)
+    hitbox = pygame.Rect(screen_location, (tilesize, tilesize))
     walkcount = 0
     jumpcount = 0
     velocity = [0, 0]
@@ -134,10 +131,33 @@ class Player:
                 return pygame.transform.flip(get_texture(self.walknames[self.walkcount // 3]), True, False)
 
     def get_draw_offset(self):
-        if event.a:
-            self.velocity[0] = self.movingspeed
-        if event.d:
+        # x is the distance to move if colliding next frame
+        player_next_frame_moving_left = pygame.Rect(self.location[0] - self.hitbox[0], self.location[1] - self.hitbox[1], tilesize, tilesize)
+        player_next_frame_moving_right = pygame.Rect(self.location[0] - self.hitbox[0], self.location[1] - self.hitbox[1], tilesize, tilesize)
+
+        # if player moving left and will collide next frame
+        if self.velocity[0] < 0 and not player_next_frame_moving_left.collidelist(rectlist) == -1:
+            # move player next to the wall
+            self.oofset = math.fabs((self.location[0] + self.hitbox[0]) - (rectlist[player_next_frame_moving_left.collidelist(rectlist)] + tilesize))
+            self.velocity[0] = 0
+        elif event.a:
             self.velocity[0] = -self.movingspeed
+
+        # if player moving right and will collide next frame
+        if self.velocity[0] > 0 and not player_next_frame_moving_right.collidelist(rectlist) == -1:
+            # move player next to the wall
+            self.oofset = math.fabs((self.location[0] + self.hitbox[0]) - rectlist[player_next_frame_moving_right.collidelist(rectlist)])
+            self.velocity[0] = 0
+        elif event.d:
+            self.velocity[0] = self.movingspeed
+
+        """
+        if event.a:
+            self.velocity[0] = -self.movingspeed
+        if event.d:
+            self.velocity[0] = self.movingspeed
+        """
+
         if not (event.a or event.d):
             self.velocity[0] = 0
         if event.space:
@@ -161,8 +181,8 @@ class Player:
         if self.velocity[1] > 20:
             self.velocity[1] = 20
         # offset
-        self.oofset[0] -= self.velocity[0]
-        self.oofset[1] -= self.velocity[1]
+        self.oofset[0] += self.velocity[0]
+        self.oofset[1] += self.velocity[1]
         return self.oofset
 
     def blittable_player(self):
